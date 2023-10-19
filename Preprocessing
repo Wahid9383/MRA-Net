@@ -106,3 +106,57 @@ for fileName in fileNames:
             center = (int((x2 - x1) / 2), int((y2 - y1) / 2))
             center = (center[0], center[1] + strid_size * ysteps)
             ysteps = ysteps + 1
+######################################################################################Patching and labeling of Full cancerous Images###################################################
+from patchify import patchify
+from spectral import *
+import os
+import numpy as np
+
+# N_files_path = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/Images/N/hyper/" # Full Cancerous Samples
+# #P_files_path = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/Images/P/hyper/" # Normal Samples
+# TumorPatches = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/Tumor/"
+# #NonTumorPatches = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/NonTumor/"
+P_files_path = "I:/dataset/image/P/hyper/"
+N_files_path = "I:/dataset/image/N/hyper/"
+TumorPatches = "I:/dataset/train/Tumor/"
+NonTumorPatches = "I:/dataset/train/NonTumor/"
+if not os.path.exists(TumorPatches):
+    os.makedirs(TumorPatches)
+
+# Counting Number of Images
+'''files = os.listdir(N_files_path)
+counter = 0
+for file in files:
+    fileName, fileExt = os.path.splitext(file)
+    if 'blank' in fileName:
+        continue
+    if fileExt == '.raw':
+        continue
+    counter += 1
+print("Total Files:", len(files))
+print("Total HSI Files:", counter)
+print("Blank Files:", int(len(files)/2) - counter)'''
+
+
+file_list = os.listdir(P_files_path)
+
+for file in file_list:
+    file_name, extension = os.path.splitext(file)
+    hsi_file = P_files_path + file_name + '.hdr'
+    if extension == '.raw':
+        continue
+    if 'blank' in file_name:
+        continue
+    hsi_image = open_image(hsi_file)
+    hsi_image = hsi_image.load()
+    hsi_image = hsi_image[:, :, :32]
+    hsi_pathes = patchify(hsi_image, (224, 224, 32), step=132)
+    os.chdir(NonTumorPatches)
+    counter = 0
+    print(len(hsi_pathes))
+    print(len(hsi_pathes[0]))
+    for i in range(len(hsi_pathes)):
+        for j in range(len(hsi_pathes[0])):
+            envi.save_image(file_name + '_patch_{}.hdr'.format(counter), hsi_pathes[i][j][0], interleave='bsq', ext='raw')
+            counter += 1
+
