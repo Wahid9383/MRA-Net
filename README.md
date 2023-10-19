@@ -1,2 +1,2 @@
 # MRA-Net
-Multi-path residual attention network
+Multi-path Residual Attention Network
