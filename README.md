@@ -1,5 +1,5 @@
 ## MRA-Net
-Multi-path Residual Attention Network
+Multi-path Residual Attention Network </br>
 <img src="https://github.com/Wahid9383/MRA-Net/assets/34777183/9e0abdb1-b2c9-4724-8783-474c7299f289" width="300" height="200">
 </br>
 ## CRCA Module
