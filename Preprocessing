@@ -37,16 +37,6 @@ for annfile in fileNames:
         counter += 1
         if counter == total:
             print("Missing File:", fileName)'''
-# Removing Blank files from the directory
-
-'''hsiFilesnames = os.listdir(hsiImagePath)
-for file in hsiFilesnames:
-    fileNm, ext = os.path.splitext(file)
-    if 'blank' in fileNm:
-        print("deleted", fileNm)
-        filePath = hsiImagePath + fileNm + ext
-        os.remove(filePath)'''
-
 
 fileNames = os.listdir(annotationsPath)
 for fileName in fileNames:
