@@ -1,1 +1,118 @@
+'''This scripts takes partial cancerous images with its ground-truth coordinate pixel points and create patches with labeling either tumor
+(if atleast one pixel is found inside the boundary region of size of 128x128) or non-tumor if no pixel is found inside the boundary region.'''
 
+from patchify import patchify
+from spectral import *
+import os
+import xml.etree.ElementTree as ET
+
+
+hsiImagePath = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/Images/L/hyper/"
+annotationsPath = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/Images/L/annotation/"
+TumorPatches = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/Tumor/"
+NonTumorPatches = "E:/My_Research _Projects/1_Histophatology_CholangiocarcinomaTumourClassification_CholedochDataSet/CholedochDataSet_V11/val/NonTumor/"
+
+
+if not os.path.exists(TumorPatches):
+    os.makedirs(TumorPatches)
+if not os.path.exists(NonTumorPatches):
+    os.makedirs(NonTumorPatches)
+
+# This code snippet is used to find missing files
+'''fileNames = os.listdir(annotationsPath)
+hsiFilesnames = os.listdir(hsiImagePath)
+print(len(fileNames))
+total = int(len(hsiFilesnames)/2)
+print(total)
+for annfile in fileNames:
+    fileName, ext = os.path.splitext(annfile)
+
+    counter = 0
+    for hsifile in hsiFilesnames:
+        filName, Ext = os.path.splitext(hsifile)
+        if Ext == '.raw':
+            continue
+        if fileName == filName:
+            break
+        counter += 1
+        if counter == total:
+            print("Missing File:", fileName)'''
+# Removing Blank files from the directory
+
+'''hsiFilesnames = os.listdir(hsiImagePath)
+for file in hsiFilesnames:
+    fileNm, ext = os.path.splitext(file)
+    if 'blank' in fileNm:
+        print("deleted", fileNm)
+        filePath = hsiImagePath + fileNm + ext
+        os.remove(filePath)'''
+
+
+fileNames = os.listdir(annotationsPath)
+for fileName in fileNames:
+    file_name, extension = os.path.splitext(fileName)
+    hsi_file = hsiImagePath + file_name + '.hdr'
+    xmlFile = annotationsPath + file_name + '.xml'
+
+    hsi_image = open_image(hsi_file)
+
+    try:
+        hsi_image = hsi_image.load()
+
+    except:
+        print(hsi_file)
+
+    tree = ET.parse(xmlFile)
+    root = tree.getroot()
+
+    # taking 30 bands out of 60 bands hsi image
+    hsi_image = hsi_image[:, :, :32]  #Uncomment it for 30 channels
+    patches = patchify(hsi_image, (224, 224, 32), step=132)
+    points = []
+    for pts in root.iter('pt'):
+        x = int(pts.find('x').text)
+        y = 1023 - int(pts.find('y').text)
+        points.append((x, y))
+    image_size = (1280, 1024)
+    strid_size = 132
+    patch_size = 224
+    total_patches = len(patches) * len(patches[0])
+    x1 = 0
+    x2 = patch_size
+    y1 = 0
+    y2 = patch_size
+    center = (int((x2 - x1) / 2), int((y2 - y1) / 2))
+    # center = (center[0]+strid_size,center[1]+strid_size)
+    ysteps = 1
+    for i in range(total_patches):
+
+        Rx1 = center[0] - 64
+        Rx2 = center[0] + 64
+        Ry1 = center[1] - 64
+        Ry2 = center[1] + 64
+        pointcounter = 0
+        for point in range(len(points)):
+            if (points[point][0] < Rx2 and points[point][0] > Rx1) and (
+                    points[point][1] < Ry2 and points[point][1] > Ry1):
+                
+                patch = hsi_image[y1:y2, x1:x2, :]
+                os.chdir(TumorPatches)
+                envi.save_image(file_name + '_patch_{}.hdr'.format(i), patch, interleave='bsq', ext='raw')
+                break
+            pointcounter += 1
+        if pointcounter == len(points):
+            patch = hsi_image[y1:y2, x1:x2, :]
+            os.chdir(NonTumorPatches)
+            envi.save_image(file_name + '_patch_{}.hdr'.format(i), patch, interleave='bsq', ext='raw')
+
+        center = (center[0] + strid_size, center[1])
+        x1 = x1 + strid_size
+        x2 = x2 + strid_size
+        if ((i + 1) % 9) == 0:
+            x1 = 0
+            x2 = patch_size
+            y1 = y1 + strid_size
+            y2 = y2 + strid_size
+            center = (int((x2 - x1) / 2), int((y2 - y1) / 2))
+            center = (center[0], center[1] + strid_size * ysteps)
+            ysteps = ysteps + 1
